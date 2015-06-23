@@ -1,0 +1,8 @@
+[package]
+
+name = "daemon_herder"
+version = "0.0.1"
+authors = [ "Daniel Gondos <dan.gondos@gmail.com>" ]
+
+[dependencies.rustc-serialize]
+git = "file:///users/dgondos/htdocs/rustc-serialize"
