@@ -21,6 +21,7 @@ impl ProcessHandler {
                 println!("Launching {:?} using command: {:?}, with args: {:?}, from directory: {:?}", config.name, config.cmd, config.args, config.cwd);
                 let mut child = Command::new(&config.cmd)
                             .current_dir(&config.cwd)
+                            .args(&config.args)
                             .spawn()
                             .unwrap_or_else(|e| { panic!("failed to execute child: {}", e) });
 
