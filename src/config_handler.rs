@@ -1,17 +1,17 @@
 use std::fs;
 use std::env;
 
-mod config;
-use self::config::Config;
+use config::Config;
+use config::OptionalConfig;
 
 pub struct ConfigHandler {
     next_path: fs::ReadDir,
 }
 
 impl Iterator for ConfigHandler {
-    type Item = Config;
+    type Item = OptionalConfig;
 
-    fn next(&mut self) -> Option<Config> {
+    fn next(&mut self) -> Option<OptionalConfig> {
         match self.next_path.next() {
             None => None,
             Some(path) => {

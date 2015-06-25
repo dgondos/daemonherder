@@ -4,30 +4,31 @@ use rustc_serialize::json;
 
 #[derive(RustcDecodable, RustcEncodable)]
 pub struct Config {
-    pub read_ok: bool,
+    pub name: String,
+    pub cwd: String,
     pub cmd: String,
-    pub args: Vec<String>,
-    pub port: i32
+    pub args: Vec<String>
+}
+
+pub enum OptionalConfig {
+    Valid(Config),
+    Invalid
 }
 
 impl Config {
-    pub fn new() -> Config {
-        return Config { read_ok: false, cmd: String::new(), args: Vec::new(), port: 0 };
-    }
-
-    pub fn from_json(path: &String) -> Config {
+    pub fn from_json(path: &String) -> OptionalConfig {
         match read_to_string(path) {
             Err(e) => {
                 println!("Could not read file {:?} due to {:?}", path, e.kind());
-                return Config::new();
+                OptionalConfig::Invalid
             },
             Ok(content_string) => {
                 match json::decode(&content_string) {
                     Err(e) => {
                         println!("Could not parse config file: {:?}, due to: {:?}", path, e);
-                        return Config::new();
+                        OptionalConfig::Invalid
                     },
-                    Ok(new_config) => return new_config
+                    Ok(new_config) => OptionalConfig::Valid(new_config)
                 }
             }
         }
