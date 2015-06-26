@@ -1,11 +1,14 @@
 use std::fs;
 use std::env;
+use std::process::Command;
 
 use config::Config;
 use config::OptionalConfig;
 
 pub struct ConfigHandler {
     next_path: fs::ReadDir,
+    config_dir: String,
+    hostname: String,
 }
 
 impl Iterator for ConfigHandler {
@@ -16,7 +19,28 @@ impl Iterator for ConfigHandler {
             None => None,
             Some(path) => {
                 let pathstring = path.unwrap().path().to_str().unwrap().to_string();
-                Some(Config::from_json(&pathstring))
+                let relpath = pathstring.replace(&self.config_dir, "");
+                let relpath_tokens: Vec<_> = relpath.split('@').collect();
+
+                if !pathstring.starts_with(&self.config_dir) {
+                    Some(OptionalConfig::Invalid)
+                }
+                else if !pathstring.ends_with(".conf") {
+                    Some(OptionalConfig::Invalid)
+                }
+                else if relpath_tokens.len() > 1 {
+                    let nominated_hostname = relpath_tokens[relpath_tokens.len() - 1].trim_right_matches(".conf");
+                    if nominated_hostname != self.hostname {
+                        Some(OptionalConfig::Invalid)
+                    }
+                    else
+                    {
+                        Some(Config::from_json(&pathstring))
+                    }
+                }
+                else {
+                    Some(Config::from_json(&pathstring))
+                }
             }
         }
     }
@@ -41,8 +65,23 @@ fn get_configs(config_dir: &String) -> fs::ReadDir {
     }
 }
 
-pub fn configs() -> ConfigHandler {
-    let config_dir = get_home() + "/.dherder";
+// this is terrible, I know, but Rust doesn't seem to have any native way to
+// retrieve the current hostname, and I prefer this to FFI'ing to
+// libc's gethostname() (at least this is in pure Rust)
+fn get_hostname() -> String {
+    match Command::new("hostname").output() {
+        Err(_) => String::new(), //not great either
+        Ok(out) => {
+            let hostname = String::from_utf8_lossy(&out.stdout).into_owned();
+            hostname.trim().to_string()
+        }
+    }
+}
 
-    ConfigHandler { next_path: get_configs(&config_dir) }
+pub fn configs() -> ConfigHandler {
+    let config_dir = get_home() + "/.dherder/";
+
+    ConfigHandler { next_path: get_configs(&config_dir),
+                    config_dir: config_dir,
+                    hostname: get_hostname() }
 }
